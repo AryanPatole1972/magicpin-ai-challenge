@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>magicpin AI Challenge - Judge Simulator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.7);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top right, #1e1b4b, #0f172a 60%);
+            color: var(--text-main);
+            margin: 0;
+            padding: 2rem;
+            min-height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            text-align: center;
+            margin-bottom: 2rem;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0 0 0.5rem 0;
+            background: linear-gradient(to right, #60a5fa, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .panel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .panel h2 {
+            font-size: 1.25rem;
+            margin: 0 0 1.5rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .control-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 1rem;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        select:focus {
+            border-color: var(--primary);
+        }
+
+        button {
+            width: 100%;
+            padding: 0.875rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            background: var(--primary);
+            color: white;
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        button.secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        button.secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .console {
+            background: #000000;
+            border-radius: 12px;
+            padding: 1.5rem;
+            height: 600px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .console-line {
+            margin: 0;
+            padding: 2px 0;
+            word-break: break-all;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .server-status {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .status-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .status-card h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .indicator.online { background: var(--success); box-shadow: 0 0 8px var(--success); }
+        .indicator.offline { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+        /* ANSI Colors mapped to CSS classes by judge_simulator.py */
+        .color-header { color: #d946ef; font-weight: bold; }
+        .color-blue { color: #60a5fa; }
+        .color-cyan { color: #22d3ee; }
+        .color-green { color: #4ade80; }
+        .color-yellow { color: #facc15; }
+        .color-red { color: #f87171; }
+        .color-magenta { color: #c084fc; }
+        .color-bold { font-weight: bold; }
+        .color-dim { opacity: 0.7; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .running {
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>magicpin AI Challenge</h1>
+            <p>Judge Simulator & Bot Interface</p>
+        </div>
+
+        <div class="sidebar">
+            <div class="panel" style="margin-bottom: 2rem;">
+                <h2>Bot Server Status</h2>
+                <div class="server-status">
+                    <div class="status-card">
+                        <h3>Health</h3>
+                        <div class="status-value" id="health-status">
+                            <span class="indicator offline"></span> Checking...
+                        </div>
+                    </div>
+                    <div class="status-card">
+                        <h3>Uptime</h3>
+                        <div class="status-value" id="uptime-value">-</div>
+                    </div>
+                </div>
+                <div class="control-group" style="margin-top: 1rem;">
+                    <button class="secondary" onclick="checkServer()">Refresh Status</button>
+                </div>
+                <div class="control-group">
+                    <button class="secondary" onclick="fetchMetadata()">View Metadata</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>Judge Simulator</h2>
+                <div class="control-group">
+                    <label for="scenario">Evaluation Scenario</label>
+                    <select id="scenario">
+                        <option value="warmup">Warmup (Fast)</option>
+                        <option value="phase2_short">Phase 2: Short Tick</option>
+                        <option value="auto_reply_hell">Auto-Reply Hell Test</option>
+                        <option value="intent_transition">Intent Transition Test</option>
+                        <option value="hostile">Hostile User Test</option>
+                        <option value="all">Run All Tests</option>
+                        <option value="full_evaluation" selected>Full Evaluation (Slow)</option>
+                    </select>
+                </div>
+                <button id="runBtn" onclick="runSimulation()">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Start Simulation
+                </button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="panel" style="padding: 0; overflow: hidden;">
+                <div style="padding: 1rem 1.5rem; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                    <div style="font-family: monospace; color: var(--text-muted);">Simulator Output</div>
+                    <button class="secondary" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="document.getElementById('console').innerHTML=''">Clear</button>
+                </div>
+                <div class="console" id="console"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const consoleEl = document.getElementById('console');
+        const runBtn = document.getElementById('runBtn');
+        let currentEventSource = null;
+
+        function appendToConsole(html) {
+            const div = document.createElement('div');
+            div.className = 'console-line';
+            div.innerHTML = html;
+            consoleEl.appendChild(div);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        async function checkServer() {
+            try {
+                // Since UI is at /judge/, health is at /v1/healthz relative to root
+                const res = await fetch('/v1/healthz');
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('health-status').innerHTML = '<span class="indicator online"></span> Online';
+                    document.getElementById('uptime-value').innerText = data.uptime_seconds + 's';
+                } else {
+                    document.getElementById('health-status').innerHTML = '<span class="indicator offline"></span> Error';
+                    document.getElementById('uptime-value').innerText = '-';
+                }
+            } catch (err) {
+                document.getElementById('health-status').innerHTML = '<span class="indicator offline"></span> Offline';
+                document.getElementById('uptime-value').innerText = '-';
+            }
+        }
+
+        async function fetchMetadata() {
+            try {
+                const res = await fetch('/v1/metadata');
+                if (res.ok) {
+                    const data = await res.json();
+                    appendToConsole(`<br><span class="color-blue">[INFO]</span> Bot Metadata:<br><pre style="color:var(--text-muted)">${JSON.stringify(data, null, 2)}</pre><br>`);
+                } else {
+                    appendToConsole(`<span class="color-red">[ERROR]</span> Failed to fetch metadata.<br>`);
+                }
+            } catch (err) {
+                appendToConsole(`<span class="color-red">[ERROR]</span> Bot server offline or unreachable.<br>`);
+            }
+        }
+
+        function runSimulation() {
+            if (currentEventSource) {
+                currentEventSource.close();
+            }
+
+            consoleEl.innerHTML = '';
+            const scenario = document.getElementById('scenario').value;
+            runBtn.disabled = true;
+            runBtn.classList.add('running');
+            runBtn.innerHTML = 'Running...';
+
+            appendToConsole(`<span class="color-dim">Starting simulation: ${scenario}...</span><br>`);
+
+            currentEventSource = new EventSource(`/judge/api/run?scenario=${scenario}`);
+
+            currentEventSource.onmessage = function(event) {
+                if (event.data === '"[DONE]"' || event.data === '[DONE]') {
+                    currentEventSource.close();
+                    runBtn.disabled = false;
+                    runBtn.classList.remove('running');
+                    runBtn.innerHTML = '<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Start Simulation';
+                    return;
+                }
+                
+                try {
+                    const parsed = JSON.parse(event.data);
+                    appendToConsole(parsed.html);
+                } catch(e) {
+                    appendToConsole(event.data);
+                }
+            };
+
+            currentEventSource.onerror = function() {
+                appendToConsole('<br><span class="color-red">[ERROR] Connection lost or server error.</span><br>');
+                currentEventSource.close();
+                runBtn.disabled = false;
+                runBtn.classList.remove('running');
+                runBtn.innerHTML = '<svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Start Simulation';
+            };
+        }
+
+        // Check server status on load
+        checkServer();
+        // Periodically check server status
+        setInterval(checkServer, 5000);
+    </script>
+</body>
+</html>

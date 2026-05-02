@@ -20,32 +20,33 @@ Author: magicpin AI Challenge Team
 # ██████  CONFIGURATION - EDIT THIS SECTION ██████
 # =============================================================================
 
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # Your bot's URL (where your bot is running)
-BOT_URL = "http://localhost:8080"
+BOT_URL = os.environ.get("BOT_URL", "http://localhost:7000")
 
 # Choose your LLM provider: "openai", "anthropic", "gemini", "deepseek", "groq", "ollama", "openrouter"
-LLM_PROVIDER = "anthropic"
+LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "anthropic")
 
 # Your API key (fetched from .env)
 LLM_API_KEY = os.environ.get("LLM_API_KEY", "")
 
 # Model to use (leave empty for default, or specify like "gpt-4o", "claude-3-5-sonnet-20241022", etc.)
-LLM_MODEL = ""  # <-- Optional: specify model or leave empty for default
+LLM_MODEL = os.environ.get("LLM_MODEL", "")  # <-- Optional: specify model or leave empty for default
 
 # For Ollama only: local server URL
-OLLAMA_URL = "http://localhost:11434"
+OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
 
 # Which test to run by default
-TEST_SCENARIO = "full_evaluation"
+TEST_SCENARIO = os.environ.get("TEST_SCENARIO", "full_evaluation")
 
 # =============================================================================
 # ██████  END OF CONFIGURATION - DON'T EDIT BELOW THIS LINE ██████
 # =============================================================================
 
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
 import sys
 import queue
 import threading
@@ -984,7 +985,7 @@ templates = Jinja2Templates(directory="templates")
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="index.html", context={"request": request})
 
 @app.get("/api/run")
 async def run_simulation(request: Request, scenario: str = "full_evaluation"):
@@ -1004,12 +1005,14 @@ async def run_simulation(request: Request, scenario: str = "full_evaluation"):
 
     threading.Thread(target=sim_runner, daemon=True).start()
 
+    import asyncio
+
     async def event_generator():
         while True:
             if await request.is_disconnected():
                 break
             try:
-                msg = log_queue.get(timeout=0.5)
+                msg = await asyncio.to_thread(log_queue.get, True, 0.5)
                 if msg == "[DONE]":
                     yield {"data": "[DONE]"}
                     break

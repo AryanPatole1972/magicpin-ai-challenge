@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>magicpin AI Challenge - Bot Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --panel-bg: rgba(20, 27, 45, 0.75);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --primary: #f43f5e;
+            --primary-hover: #e11d48;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #0b0f19 0%, #1e1b4b 100%);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .navbar {
+            width: 100%;
+            padding: 1rem 2rem;
+            background: rgba(11, 15, 25, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar h2 {
+            margin: 0;
+            font-weight: 700;
+            font-size: 1.5rem;
+            background: linear-gradient(to right, #f43f5e, #fbbf24);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links a {
+            color: var(--text-main);
+            text-decoration: none;
+            margin-left: 2rem;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        .nav-links a.active {
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 0.25rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            padding: 3rem 2rem;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 2rem;
+            animation: slideDown 0.8s ease-out;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 0 0 1rem 0;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto 2rem auto;
+            line-height: 1.5;
+        }
+
+        .hero .btn {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, var(--primary) 0%, #fbbf24 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 20px rgba(244, 63, 94, 0.4);
+        }
+
+        .hero .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(244, 63, 94, 0.6);
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .panel:hover {
+            transform: translateY(-5px);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        .panel-header h3 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        .metadata-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .metadata-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .metadata-item label {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .metadata-item .value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            word-break: break-word;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <h2>magicpin bot</h2>
+        <div class="nav-links">
+            <a href="/" class="active">Home Dashboard</a>
+            <a href="/judge/">Judge Simulator</a>
+            <a href="/docs">API Docs</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="hero">
+            <h1>Welcome to Vera Bot</h1>
+            <p>An intelligent, highly-responsive merchant assistant AI powered by Google Gemini and Anthropic. Designed for the magicpin AI Challenge.</p>
+            <a href="/judge/" class="btn">Launch Judge Simulator</a>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h3>Server Health & Status</h3>
+                <div class="status-badge" id="server-status">
+                    <div class="indicator"></div> Online & Ready
+                </div>
+            </div>
+            
+            <div class="metadata-grid">
+                <div class="metadata-item">
+                    <label>Uptime</label>
+                    <div class="value" id="uptime">-</div>
+                </div>
+                <div class="metadata-item">
+                    <label>Loaded Contexts</label>
+                    <div class="value" id="contexts">-</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h3>Bot Configuration</h3>
+            </div>
+            
+            <div class="metadata-grid" id="metadata-container">
+                <div class="metadata-item">
+                    <label>Team</label>
+                    <div class="value" id="meta-team">Loading...</div>
+                </div>
+                <div class="metadata-item">
+                    <label>Model Engine</label>
+                    <div class="value" id="meta-model">Loading...</div>
+                </div>
+                <div class="metadata-item">
+                    <label>Version</label>
+                    <div class="value" id="meta-version">Loading...</div>
+                </div>
+            </div>
+            
+            <div class="metadata-item" style="margin-top: 1.5rem;">
+                <label>Approach & Architecture</label>
+                <div class="value" id="meta-approach" style="font-size: 1rem; font-weight: 400; line-height: 1.6;">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchStatus() {
+            try {
+                const healthRes = await fetch('/v1/healthz');
+                if (healthRes.ok) {
+                    const health = await healthRes.json();
+                    document.getElementById('uptime').innerText = health.uptime_seconds + 's';
+                    
+                    const ctx = health.contexts_loaded;
+                    document.getElementById('contexts').innerText = 
+                        `${ctx.merchant} M | ${ctx.category} C | ${ctx.trigger} T`;
+                }
+
+                const metaRes = await fetch('/v1/metadata');
+                if (metaRes.ok) {
+                    const meta = await metaRes.json();
+                    document.getElementById('meta-team').innerText = meta.team_name;
+                    document.getElementById('meta-model').innerText = meta.model;
+                    document.getElementById('meta-version').innerText = meta.version;
+                    document.getElementById('meta-approach').innerText = meta.approach;
+                }
+            } catch (err) {
+                console.error("Failed to fetch server status", err);
+                document.getElementById('server-status').innerHTML = '<div class="indicator" style="background:var(--danger); box-shadow:0 0 10px var(--danger);"></div> Offline';
+                document.getElementById('server-status').style.background = 'rgba(239, 68, 68, 0.1)';
+                document.getElementById('server-status').style.color = 'var(--danger)';
+                document.getElementById('server-status').style.borderColor = 'rgba(239, 68, 68, 0.2)';
+            }
+        }
+
+        // Fetch immediately and poll every 5 seconds
+        fetchStatus();
+        setInterval(fetchStatus, 5000);
+    </script>
+
+</body>
+</html>

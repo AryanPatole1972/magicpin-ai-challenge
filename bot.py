@@ -1,7 +1,7 @@
 """
 Vera — magicpin Merchant AI Assistant
 Bot server implementing all 5 required endpoints.
-Team: Aryan Patole | Model: google/gemini-2.0-flash-exp (free tier)
+Team: Aryan Patole | Model: claude-3-5-sonnet-20241022 (free tier)
 """
 
 import os
@@ -13,6 +13,8 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -21,11 +23,28 @@ from composer import VeraComposer
 # ─────────────────────────────────────────
 # App setup
 # ─────────────────────────────────────────
+from dotenv import load_dotenv
+load_dotenv()
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("vera-bot")
 
 app = FastAPI(title="Vera — magicpin Merchant AI Bot", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+templates = Jinja2Templates(directory="templates")
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+async def home(request: Request):
+    return templates.TemplateResponse(request=request, name="home.html", context={"request": request})
+
+from fastapi.responses import RedirectResponse
+from judge_simulator import app as judge_app
+app.mount("/judge", judge_app)
+
+@app.get("/judge", include_in_schema=False)
+async def redirect_to_judge():
+    return RedirectResponse(url="/judge/")
 
 START_TIME = time.time()
 
@@ -386,7 +405,7 @@ async def metadata():
     return {
         "team_name": "Aryan Patole",
         "team_members": ["Aryan Patole"],
-        "model": "google/gemini-2.0-flash-exp",
+        "model": "claude-3-5-sonnet-20241022",
         "approach": (
             "4-context composer with trigger-kind routing: each trigger kind maps to a "
             "specialized prompt variant. Auto-reply detection via lexical signals. "
@@ -416,5 +435,5 @@ async def teardown():
 # ─────────────────────────────────────────
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 8080))
+    port = int(os.environ.get("PORT", 7000))
     uvicorn.run("bot:app", host="0.0.0.0", port=port, reload=False)

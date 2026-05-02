@@ -579,7 +579,7 @@ Same `body` text sent twice in the same `conversation_id` → -2 anti-repetition
 
 ```bash
 # Set your bot URL
-export BOT_URL=http://localhost:8080
+export BOT_URL=http://localhost:7000
 
 # Healthz
 curl $BOT_URL/v1/healthz

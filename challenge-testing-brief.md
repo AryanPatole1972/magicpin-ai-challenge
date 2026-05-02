@@ -449,7 +449,7 @@ async def reply(body: ReplyBody):
             "rationale": "acknowledged + advanced"}
 ```
 
-Run: `uvicorn bot:app --host 0.0.0.0 --port 8080`
+Run: `uvicorn bot:app --host 0.0.0.0 --port 7000`
 
 This is a working skeleton. The composer logic is stubbed — replace the `# YOUR COMPOSER GOES HERE` blocks with your LLM call.
 
@@ -460,7 +460,7 @@ This is a working skeleton. The composer logic is stubbed — replace the `# YOU
 Magicpin provides a `judge_simulator.py` that runs a mini version of the harness against your endpoint. Use it during development:
 
 ```bash
-export BOT_URL=http://localhost:8080
+export BOT_URL=http://localhost:7000
 python judge_simulator.py
 ```
 
