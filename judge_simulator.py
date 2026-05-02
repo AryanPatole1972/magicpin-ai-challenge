@@ -26,8 +26,8 @@ BOT_URL = "http://localhost:8080"
 # Choose your LLM provider: "openai", "anthropic", "gemini", "deepseek", "groq", "ollama", "openrouter"
 LLM_PROVIDER = "anthropic"
 
-# Your API key (paste your key here)
-LLM_API_KEY = ""  # <-- PUT YOUR API KEY HERE
+# Your API key (fetched from .env)
+LLM_API_KEY = os.environ.get("LLM_API_KEY", "")
 
 # Model to use (leave empty for default, or specify like "gpt-4o", "claude-3-5-sonnet-20241022", etc.)
 LLM_MODEL = ""  # <-- Optional: specify model or leave empty for default
@@ -43,7 +43,49 @@ TEST_SCENARIO = "full_evaluation"
 # =============================================================================
 
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 import sys
+import queue
+import threading
+import builtins
+import html
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from sse_starlette.sse import EventSourceResponse
+
+log_queue = queue.Queue()
+
+def ansi_to_html(text):
+    text = html.escape(text)
+    text = text.replace('\033[95m', '<span class="color-header">')
+    text = text.replace('\033[94m', '<span class="color-blue">')
+    text = text.replace('\033[96m', '<span class="color-cyan">')
+    text = text.replace('\033[92m', '<span class="color-green">')
+    text = text.replace('\033[93m', '<span class="color-yellow">')
+    text = text.replace('\033[91m', '<span class="color-red">')
+    text = text.replace('\033[35m', '<span class="color-magenta">')
+    text = text.replace('\033[1m', '<span class="color-bold">')
+    text = text.replace('\033[2m', '<span class="color-dim">')
+    text = text.replace('\033[0m', '</span>')
+    text = text.replace('\n', '<br>')
+    return text
+
+original_print = builtins.print
+def custom_print(*args, **kwargs):
+    original_print(*args, **kwargs)
+    if not args:
+        log_queue.put("<br>")
+        return
+    text = " ".join(str(a) for a in args)
+    if 'end' in kwargs and kwargs['end'] == '':
+        log_queue.put(ansi_to_html(text))
+    else:
+        log_queue.put(ansi_to_html(text))
+
+builtins.print = custom_print
 import json
 import time
 import re
@@ -915,15 +957,12 @@ class JudgeSimulator:
 # ENTRY POINT
 # =============================================================================
 
-def main():
+def main_logic(scenario):
     print_header("magicpin AI Challenge — LLM Judge")
 
     # Validate configuration
     if LLM_PROVIDER != "ollama" and not LLM_API_KEY:
-        print_fail("LLM_API_KEY is not set!")
-        print_info("Edit the CONFIGURATION section at the top of this file")
-        print_info("Set your API key for your chosen provider")
-        sys.exit(1)
+        print_warn("LLM_API_KEY is not set! Proceeding with fallback scoring heuristics.")
 
     # Create LLM provider
     try:
@@ -931,28 +970,55 @@ def main():
         print_info(f"LLM Provider: {llm.name()}")
     except Exception as e:
         print_fail(f"Failed to create LLM provider: {e}")
-        sys.exit(1)
+        return False
 
-    # Test LLM connection
     print_info("Testing LLM connection... (skipped for credit limitation)")
-    # try:
-    #     test_response = llm.complete("Say 'ready' if you can hear me.", "You are a test assistant.")
-    #     if test_response:
-    #         print_success("LLM connected successfully")
-    #     else:
-    #         print_fail("LLM returned empty response")
-    #         sys.exit(1)
-    # except Exception as e:
-    #     print_fail(f"LLM connection failed: {e}")
-    #     print_info("Check your API key and internet connection")
-    #     sys.exit(1)
-
+    
     # Run the judge
     judge = JudgeSimulator(llm)
-    success = judge.run(TEST_SCENARIO)
+    success = judge.run(scenario)
+    return success
 
-    sys.exit(0 if success else 1)
+app = FastAPI(title="Judge UI")
+templates = Jinja2Templates(directory="templates")
 
+@app.get("/", response_class=HTMLResponse)
+async def index(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/api/run")
+async def run_simulation(request: Request, scenario: str = "full_evaluation"):
+    while not log_queue.empty():
+        try:
+            log_queue.get_nowait()
+        except queue.Empty:
+            break
+
+    def sim_runner():
+        try:
+            main_logic(scenario)
+        except Exception as e:
+            print(f"{Colors.RED}Error: {e}{Colors.RESET}")
+        finally:
+            log_queue.put("[DONE]")
+
+    threading.Thread(target=sim_runner, daemon=True).start()
+
+    async def event_generator():
+        while True:
+            if await request.is_disconnected():
+                break
+            try:
+                msg = log_queue.get(timeout=0.5)
+                if msg == "[DONE]":
+                    yield {"data": "[DONE]"}
+                    break
+                yield {"data": json.dumps({"html": msg})}
+            except queue.Empty:
+                pass
+
+    return EventSourceResponse(event_generator())
 
 if __name__ == "__main__":
-    main()
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8081)
